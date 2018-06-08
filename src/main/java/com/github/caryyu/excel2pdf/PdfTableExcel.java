@@ -49,9 +49,16 @@ public class PdfTableExcel {
 	 * @throws MalformedURLException
 	 * @throws IOException
 	 */
-	public PdfPTable getTable() throws BadElementException, MalformedURLException, IOException, DocumentException {
-		Sheet sheet = this.excel.getSheet();
-		return toParseContent(sheet);
+	public List<PdfPTable> getTable() throws BadElementException, MalformedURLException, IOException, DocumentException {
+		List<PdfPTable> tableList=new ArrayList<PdfPTable>();
+	    for(int i=0;i<this.excel.wb.getNumberOfSheets();i++){
+            Sheet sheet = this.excel.wb.getSheetAt(i);
+            PdfPTable table=toParseContent(sheet);
+            tableList.add(table);
+        }
+        return tableList;
+//        Sheet sheet = this.excel.getSheet();
+//		return toParseContent(sheet);
 	}
 
 	protected PdfPTable toParseContent(Sheet sheet)
@@ -172,15 +179,15 @@ public class PdfTableExcel {
 			if (firstFormatIdx > 0)
 				numberFormat = formatStr.substring(0, firstFormatIdx);
 			String formattedValue = new CellNumberFormatter(numberFormat).format(cellNumberValue);
-			Phrase phrase = new Phrase(formattedValue, getFontByExcel(cell.getCellStyle()));
+			Phrase phrase = new Phrase(formattedValue, getFontByExcel(cell));
 			return phrase;
 		}
 		// 強制轉換為文字類別,如此沒有格式化的數字也能透過 cell.getStringCellValue 取出
 		cell.setCellType(Cell.CELL_TYPE_STRING);
 		if (this.setting || this.excelObject.getAnchorName() == null) {
-			return new Phrase(cell.getStringCellValue(), getFontByExcel(cell.getCellStyle()));
+			return new Phrase(cell.getStringCellValue(), getFontByExcel(cell));
 		}
-		Anchor anchor = new Anchor(cell.getStringCellValue(), getFontByExcel(cell.getCellStyle()));
+		Anchor anchor = new Anchor(cell.getStringCellValue(), getFontByExcel(cell));
 		anchor.setName(this.excelObject.getAnchorName());
 		this.setting = true;
 		return anchor;
@@ -267,7 +274,14 @@ public class PdfTableExcel {
 		return result;
 	}
 
-	protected Font getFontByExcel(CellStyle style) {
+	protected Font getFontByExcel(Cell cell) {
+		//判断单元格内容是否包含中文 包含直接返回中文样式
+		for (char c : cell.getStringCellValue().toCharArray()) {
+			if (c >= 0x4E00 &&  c <= 0x9FA5){
+				return new Font(Resource.BASE_FONT_CHINESE,12,Font.NORMAL, BaseColor.BLACK);
+			}
+		}
+		CellStyle style=cell.getCellStyle();
 		Workbook wb = excel.getWorkbook();
 		// 字体样式索引
 		short index = style.getFontIndex();

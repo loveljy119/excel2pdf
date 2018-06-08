@@ -75,6 +75,26 @@ public class Excel2Pdf extends PdfTool {
 		this.pageSize = pageSize;
 	}
 
+	private void addTable(List<PdfPTable> tableList) throws DocumentException {
+		int index=0;
+		for(PdfPTable table:tableList){
+			if(index!=0){
+				PdfPTable blankTable=new PdfPTable(1);
+				for(int i=0;i<2;i++){
+					PdfPCell pdfpCell = new PdfPCell(new Paragraph(" "));
+					pdfpCell.disableBorderSide(PdfPCell.LEFT);
+					pdfpCell.disableBorderSide(PdfPCell.RIGHT);
+					pdfpCell.disableBorderSide(PdfPCell.TOP);
+					pdfpCell.disableBorderSide(PdfPCell.BOTTOM);
+					blankTable.addCell(pdfpCell);
+				}
+				getDocument().add(blankTable);
+			}
+			getDocument().add(table);
+			index++;
+		}
+	}
+
 	/**
 	 * <p>
 	 * Description: 转换调用
@@ -105,31 +125,34 @@ public class Excel2Pdf extends PdfTool {
 		getDocument().open();
 		// Single one
 		if (this.objects.size() <= 1) {
-			PdfPTable table = this.toCreatePdfTable(this.objects.get(0), getDocument(), writer);
-			getDocument().add(table);
+			List<PdfPTable> tableList = this.toCreatePdfTable(this.objects.get(0), getDocument(), writer);
+			this.addTable(tableList);
 		}
 		// Multiple ones
 		if (this.objects.size() > 1) {
 			toCreateContentIndexes(writer, this.getDocument(), this.objects);
 			//
 			for (int i = 0; i < this.objects.size(); i++) {
-				PdfPTable table = this.toCreatePdfTable(this.objects.get(i), getDocument(), writer);
-				getDocument().add(table);
+				List<PdfPTable> tableList = this.toCreatePdfTable(this.objects.get(i), getDocument(), writer);
+				this.addTable(tableList);
 			}
 		}
 		//
 		getDocument().close();
 	}
 
-	protected PdfPTable toCreatePdfTable(ExcelObject object, Document document, PdfWriter writer)
+	protected List<PdfPTable> toCreatePdfTable(ExcelObject object, Document document, PdfWriter writer)
 			throws MalformedURLException, IOException, DocumentException {
-		PdfPTable table = new PdfTableExcel(object).getTable();
-		table.setKeepTogether(true);
-		// table.setWidthPercentage(new float[]{100} , writer.getPageSize());
-		table.getDefaultCell().setBorder(PdfPCell.NO_BORDER);
-		// 表格置中
-		table.setHorizontalAlignment(PdfPTable.ALIGN_CENTER);
-		return table;
+		List<PdfPTable> tableList = new PdfTableExcel(object).getTable();
+		for(PdfPTable table:tableList){
+			table.setKeepTogether(true);
+			// table.setWidthPercentage(new float[]{100} , writer.getPageSize());
+			table.getDefaultCell().setBorder(PdfPCell.NO_BORDER);
+			// 表格置中
+			table.setHorizontalAlignment(PdfPTable.ALIGN_CENTER);
+		}
+
+		return tableList;
 	}
 
 	/**
